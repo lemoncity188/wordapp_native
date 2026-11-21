@@ -167,10 +167,10 @@ struct Index {
       if (!this.studyLoaded) {
         Text('学习记录尚未加载，请点击重试').fontColor('#8B9E98').padding(32).onClick(() => { this.execute(async () => { await this.loadStudy(); }); })
       } else if (this.cursor < this.queue.length) {
-        Text(this.queue[this.cursor].word).fontSize(36).fontWeight(FontWeight.Bold).fontColor('#28866E').margin({ top: 30 })
+        Text(this.queue[this.cursor].word).fontSize(36).fontWeight(FontWeight.Bold).fontColor('#718675').margin({ top: 30 })
         Row({ space: 12 }) {
           Text('美[' + (this.queue[this.cursor].vocabulary?.usPhonetic ?? '') + ']').fontColor('#666666')
-          Image($r('app.media.speaker')).width(36).height(36).padding(6).backgroundColor('#EDF7F2').borderRadius(18).accessibilityText('播放单词发音').onClick(() => { this.execute(async () => { await this.speak(); }); })
+          Image($r('app.media.speaker')).width(36).height(36).padding(6).backgroundColor('#F1F4EE').borderRadius(18).accessibilityText('播放单词发音').onClick(() => { this.execute(async () => { await this.speak(); }); })
         }
         if (this.revealed) {
           if (this.queue[this.cursor].translation) { Text('个人').fontColor('#339999').width('100%'); Text(this.queue[this.cursor].translation ?? '').width('100%') }
@@ -341,9 +341,9 @@ struct Index {
         }.layoutWeight(1).width('100%')
         if (this.loggedIn) {
           Row({ space: 10 }) {
-            Button('单词' + (this.queue.length > this.cursor ? ' · ' + (this.queue.length - this.cursor) : ''), { type: ButtonType.Normal }).fontColor(this.tab === 0 ? '#FFFFFF' : '#55736A').backgroundColor(this.tab === 0 ? '#28866E' : '#F0F6F3').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 0; this.execute(async () => { await this.loadStudy(); }); })
-            Button('词库', { type: ButtonType.Normal }).fontColor(this.tab === 1 ? '#FFFFFF' : '#55736A').backgroundColor(this.tab === 1 ? '#28866E' : '#F0F6F3').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 1; this.execute(async () => { this.groups = await this.api.post<LibraryGroup[]>('library/pageList'); }); })
-            Button('我的', { type: ButtonType.Normal }).fontColor(this.tab === 2 ? '#FFFFFF' : '#55736A').backgroundColor(this.tab === 2 ? '#28866E' : '#F0F6F3').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 2; this.execute(async () => { this.user = await this.api.post<User>('user/info'); }); })
+            Button('单词' + (this.queue.length > this.cursor ? ' · ' + (this.queue.length - this.cursor) : ''), { type: ButtonType.Normal }).fontColor(this.tab === 0 ? '#52634F' : '#8C9588').backgroundColor(this.tab === 0 ? '#DFE8D8' : '#F5F6F2').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 0; this.execute(async () => { await this.loadStudy(); }); })
+            Button('词库', { type: ButtonType.Normal }).fontColor(this.tab === 1 ? '#52634F' : '#8C9588').backgroundColor(this.tab === 1 ? '#DFE8D8' : '#F5F6F2').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 1; this.execute(async () => { this.groups = await this.api.post<LibraryGroup[]>('library/pageList'); }); })
+            Button('我的', { type: ButtonType.Normal }).fontColor(this.tab === 2 ? '#52634F' : '#8C9588').backgroundColor(this.tab === 2 ? '#DFE8D8' : '#F5F6F2').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 2; this.execute(async () => { this.user = await this.api.post<User>('user/info'); }); })
           }.padding(12).width('100%').enabled(!this.busy)
         }
       }
