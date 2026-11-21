@@ -33,8 +33,8 @@ struct RootView: View {
                 Text(title)
                 if index == 0 && model.queue.count > model.cursor { Text("· \(model.queue.count - model.cursor)").font(.caption) }
             }.font(.system(size: 15, weight: .medium)).frame(maxWidth: .infinity).frame(height: 44)
-                .foregroundColor(selected ? Color(red: 0.322, green: 0.388, blue: 0.310) : Color(red: 0.549, green: 0.584, blue: 0.533))
-                .background(selected ? Color(red: 0.875, green: 0.910, blue: 0.847) : Color(red: 0.961, green: 0.965, blue: 0.949)).cornerRadius(14)
+                .foregroundColor(selected ? Color(red: 0.404, green: 0.761, blue: 0.227) : Color(red: 0.565, green: 0.576, blue: 0.6))
+                .background(selected ? Color(red: 0.941, green: 0.976, blue: 0.922) : Color(red: 0.961, green: 0.969, blue: 0.98)).cornerRadius(14)
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
@@ -119,10 +119,10 @@ struct StudyView: View {
                 if model.busy { Spacer(); ProgressView(); Spacer() }
                 else if !model.studyLoaded { Spacer(); Button("加载学习记录") { model.run { try await model.loadStudy() } }; Spacer() }
                 else if let item = model.current {
-                    Text(item["word"] as? String ?? "").font(.system(size: 36, weight: .bold)).foregroundColor(Color(red: 0.443, green: 0.525, blue: 0.459)).padding(.top, 30)
+                    Text(item["word"] as? String ?? "").font(.system(size: 36, weight: .bold)).foregroundColor(Color(red: 0.404, green: 0.761, blue: 0.227)).padding(.top, 30)
                     HStack {
                         Text("美[" + ((item["vocabulary"] as? JSON)?["usPhonetic"] as? String ?? "") + "]").foregroundColor(.secondary)
-                        Button { model.run { try await model.speak() } } label: { Image(systemName: "speaker.wave.2").font(.system(size: 20)).foregroundColor(Color(red: 0.443, green: 0.525, blue: 0.459)).frame(width: 36, height: 36).background(Color(red: 0.945, green: 0.957, blue: 0.933)).clipShape(Circle()) }.accessibilityLabel("播放单词发音")
+                        Button { model.run { try await model.speak() } } label: { Image(systemName: "speaker.wave.2").font(.system(size: 20)).foregroundColor(Color(red: 0.404, green: 0.761, blue: 0.227)).frame(width: 36, height: 36).background(Color(red: 0.941, green: 0.976, blue: 0.922)).clipShape(Circle()) }.accessibilityLabel("播放单词发音")
                     }
                     ScrollView {
                         if model.revealed {
@@ -142,7 +142,7 @@ struct StudyView: View {
                         }
                     }
                     HStack(spacing: 20) {
-                        gradeButton("认识", .green, 1)
+                        gradeButton("认识", Color(red: 0.404, green: 0.761, blue: 0.227), 1)
                         gradeButton("模糊", .orange, -1)
                         gradeButton("忘记", .red, nil)
                     }.padding(24)
