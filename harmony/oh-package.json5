@@ -1,0 +1,8 @@
+{
+  "name": "panda-word",
+  "version": "1.0.0",
+  "description": "熊猫单词 ArkUI 原生应用",
+  "dependencies": {},
+  "devDependencies": {},
+  "modelVersion": "5.0.0"
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "plain": "13800138000",
+    "base64": "PneUjiZVsoWHh8PZumezwg=="
+  },
+  {
+    "plain": "password123",
+    "base64": "8jtqPtpzKyU/8FWL7a6nNw=="
+  },
+  {
+    "plain": "1234567890abcdef",
+    "base64": "ZpKHxobd6aWeLHRvk8vVxw=="
+  },
+  {
+    "plain": "中文密码123",
+    "base64": "lihYsXfYmy0kS8H09YKZoA=="
+  },
+  {
+    "plain": "long-password-for-block-boundary-0123456789",
+    "base64": "WxPA6pTq1nqwswiCxmlJrK+6GxPTaUvV4Hp3C8wXY8+cFhcpip7F5OHBAXs+VkkG"
+  }
+]

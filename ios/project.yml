@@ -1,0 +1,19 @@
+name: PandaWord
+options:
+  bundleIdPrefix: com.pandaword
+  deploymentTarget:
+    iOS: '16.0'
+targets:
+  PandaWord:
+    type: application
+    platform: iOS
+    sources: [PandaWord]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pandaword.native
+        SWIFT_VERSION: '5.0'
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: PandaWord/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: 熊猫单词
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        TARGETED_DEVICE_FAMILY: '1,2'
