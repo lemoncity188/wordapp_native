@@ -3,6 +3,8 @@ import { cryptoFramework } from '@kit.CryptoArchitectureKit';
 import { util } from '@kit.ArkTS';
 import { preferences } from '@kit.ArkData';
 import { common } from '@kit.AbilityKit';
+import { asset } from '@kit.AssetStoreKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 
 export interface Vocabulary { usPhonetic?: string; content?: string; sentence?: string; }
 export interface Word { id?: number; word: string; level?: number; reviewTime?: number; translation?: string; checked?: boolean; vocabulary?: Vocabulary; }
@@ -31,7 +33,29 @@ export class Api {
   async init(context: common.UIAbilityContext): Promise<void> {
     this.prefs = await preferences.getPreferences(context, { name: 'panda_settings' });
     this.baseURL = await this.prefs.get('apiURL', this.baseURL) as string;
-    // Session only: do not persist the bearer token in unencrypted preferences.
+    try {
+      const query: asset.AssetMap = new Map();
+      query.set(asset.Tag.ALIAS, new util.TextEncoder().encodeInto('pandaword_token'));
+      query.set(asset.Tag.RETURN_TYPE, asset.ReturnType.ALL);
+      const values = await asset.query(query);
+      if (values.length > 0) { this.token = new util.TextDecoder().decodeToString(values[0].get(asset.Tag.SECRET) as Uint8Array); }
+    } catch (error) {
+      if ((error as BusinessError).code !== asset.ErrorCode.NOT_FOUND) { throw new Error((error as BusinessError).message); }
+    }
+  }
+  async saveToken(value: string): Promise<void> {
+    const attributes: asset.AssetMap = new Map();
+    attributes.set(asset.Tag.ALIAS, new util.TextEncoder().encodeInto('pandaword_token'));
+    if (value) {
+      attributes.set(asset.Tag.SECRET, new util.TextEncoder().encodeInto(value));
+      attributes.set(asset.Tag.CONFLICT_RESOLUTION, asset.ConflictResolution.OVERWRITE);
+      await asset.add(attributes);
+    } else {
+      try { await asset.remove(attributes); } catch (error) {
+        if ((error as BusinessError).code !== asset.ErrorCode.NOT_FOUND) { throw new Error((error as BusinessError).message); }
+      }
+    }
+    this.token = value;
   }
   async saveURL(value: string): Promise<void> {
     this.baseURL = value;
@@ -49,7 +73,7 @@ export class Api {
       });
       if (response.responseCode < 200 || response.responseCode >= 300) { throw new Error('服务器请求失败：' + response.responseCode); }
       const result = JSON.parse(response.result as string) as Envelope<T>;
-      if (result.errorCode === 1000 && result.subCode === 1) { this.token = ''; throw new Error('登录已过期，请重新登录'); }
+      if (result.errorCode === 1000 && result.subCode === 1) { await this.saveToken(''); throw new Error('登录已过期，请重新登录'); }
       if (result.code !== 200 && result.status !== 0) { throw new Error(result.subMessage || result.errorMessage || '请求失败'); }
       return result.data;
     } finally { client.destroy(); }

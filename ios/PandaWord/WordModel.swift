@@ -49,6 +49,7 @@ func encrypt(_ text: String) throws -> String {
     @Published var records: [JSON] = []
     @Published var queue: [JSON] = []
     @Published var cursor = 0
+    @Published var studyLoaded = false
     @Published var revealed = false
     @Published var selectedTab = 0
     private var player: AVPlayer?
@@ -86,7 +87,7 @@ func encrypt(_ text: String) throws -> String {
         } else { message = mode == 1 ? "注册成功，请登录" : "密码已修改，请登录" }
     }
     func loadStudy() async throws {
-        queue = []; cursor = 0; revealed = false
+        studyLoaded = false
         profile = try await post("user/info") as? JSON ?? [:]
         let result = try await post("userWordRecord/load") as? JSON ?? [:]
         let raw = result["recordComplete"] as? String ?? "[]"
@@ -99,7 +100,7 @@ func encrypt(_ text: String) throws -> String {
         }
         var details: [JSON] = []
         if !due.isEmpty { details = try await post("userWordRecord/load/adv", due) as? [JSON] ?? [] }
-        queue = details; cursor = 0; revealed = false
+        queue = details; cursor = 0; revealed = false; studyLoaded = true
     }
     func grade(_ delta: Int?) async throws {
         guard let word = current?["word"] as? String, let index = records.firstIndex(where: { $0["word"] as? String == word }) else { throw AppFailure(message: "学习记录与单词不匹配，请刷新") }

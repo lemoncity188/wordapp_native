@@ -11,6 +11,7 @@ struct Index {
   private player?: media.AVPlayer;
   @State ready: boolean = false;
   @State loggedIn: boolean = false;
+  @State studyLoaded: boolean = false;
   @State busy: boolean = false;
   @State notice: string = '';
   @State tab: number = 0;
@@ -48,7 +49,8 @@ struct Index {
   aboutToAppear(): void {
     this.execute(async () => {
       await this.api.init(getContext(this) as common.UIAbilityContext);
-      this.server = this.api.baseURL; this.ready = true;
+      this.server = this.api.baseURL; this.ready = true; this.loggedIn = this.api.token.length > 0;
+      if (this.api.token) { await this.loadStudy(); }
     });
   }
   aboutToDisappear(): void { this.player?.release(); clearInterval(this.countdownTimer); }
@@ -70,7 +72,7 @@ struct Index {
     if (this.authMode === 0) {
       const token = await this.api.post<string>('user/login', body);
       if (!token || typeof token !== 'string') { throw new Error('登录未返回有效凭证'); }
-      this.api.token = token; this.password = ''; this.loggedIn = true;
+      await this.api.saveToken(token); this.password = ''; this.loggedIn = true;
       await this.loadStudy();
     } else {
       await this.api.post<Object>(this.authMode === 1 ? 'user/register' : 'user/change/password', body);
@@ -78,14 +80,14 @@ struct Index {
     }
   }
   async loadStudy(): Promise<void> {
-    this.queue = []; this.cursor = 0; this.revealed = false;
+    this.studyLoaded = false;
     this.user = await this.api.post<User>('user/info');
     const data = await this.api.post<RecordData>('userWordRecord/load');
     const records = JSON.parse(data?.recordComplete || '[]') as Word[];
     if (this.user.vip === 0 && records.length > 200) { throw new Error('普通会员最多学习200个单词'); }
     const pending = records.filter((item: Word) => due(item, Date.now()));
     const queue = pending.length > 0 ? await this.api.post<Word[]>('userWordRecord/load/adv', pending) : [];
-    this.records = records; this.queue = queue; this.cursor = 0; this.revealed = false;
+    this.records = records; this.queue = queue; this.cursor = 0; this.revealed = false; this.studyLoaded = true;
   }
   async save(records: Word[]): Promise<void> {
     const body = new SaveBody(); body.recordComplete = JSON.stringify(records);
@@ -162,11 +164,13 @@ struct Index {
   @Builder
   studyView() {
     Column({ space: 20 }) {
-      if (this.cursor < this.queue.length) {
-        Text(this.queue[this.cursor].word).fontSize(36).fontWeight(FontWeight.Bold).margin({ top: 30 })
+      if (!this.studyLoaded) {
+        Text('学习记录尚未加载，请点击重试').fontColor('#8B9E98').padding(32).onClick(() => { this.execute(async () => { await this.loadStudy(); }); })
+      } else if (this.cursor < this.queue.length) {
+        Text(this.queue[this.cursor].word).fontSize(36).fontWeight(FontWeight.Bold).fontColor('#28866E').margin({ top: 30 })
         Row({ space: 12 }) {
           Text('美[' + (this.queue[this.cursor].vocabulary?.usPhonetic ?? '') + ']').fontColor('#666666')
-          Text('♬').fontSize(24).fontColor('#339999').onClick(() => { this.execute(async () => { await this.speak(); }); })
+          Image($r('app.media.speaker')).width(36).height(36).padding(6).backgroundColor('#EDF7F2').borderRadius(18).accessibilityText('播放单词发音').onClick(() => { this.execute(async () => { await this.speak(); }); })
         }
         if (this.revealed) {
           if (this.queue[this.cursor].translation) { Text('个人').fontColor('#339999').width('100%'); Text(this.queue[this.cursor].translation ?? '').width('100%') }
@@ -289,13 +293,13 @@ struct Index {
       }
       Row() { this.settingsRow('会员说明', '☆') }.width('100%').onClick(() => { this.showingVIP = true; })
       Row() { this.settingsRow('隐私政策', '◇') }.width('100%').onClick(() => { this.showingPrivacy = true; })
-      Row() { this.settingsRow('登出', '↗') }.width('100%').onClick(() => { this.execute(async () => { await this.api.post<Object>('user/logout'); this.clear(); }); })
+      Row() { this.settingsRow('登出', '↗') }.width('100%').onClick(() => { this.execute(async () => { await this.api.post<Object>('user/logout'); await this.api.saveToken(''); this.clear(); }); })
       Row() { this.settingsRow('注销用户', '−', true) }.width('100%').onClick(() => {
         AlertDialog.show({ title: '注销账号', message: '注销将删除账号，是否继续？',
           primaryButton: { value: '取消', action: () => {} },
           secondaryButton: { value: '确认注销', action: () => { this.execute(async () => {
             const body = new RemoveBody(); body.id = this.user.userId;
-            await this.api.post<Object>('user/removal', body); this.clear();
+            await this.api.post<Object>('user/removal', body); await this.api.saveToken(''); this.clear();
           }); } }
         });
       })
@@ -327,17 +331,19 @@ struct Index {
         if (this.busy) { LoadingProgress().width(32).height(32) }
         Scroll() {
           Column() {
-            if (!this.loggedIn) { this.authView() }
+            if (!this.ready || this.busy) {
+              Column() { LoadingProgress().width(32).height(32).color('#339999') }.width('100%').height(400).justifyContent(FlexAlign.Center)
+            } else if (!this.loggedIn) { this.authView() }
             else if (this.tab === 0) { this.studyView() }
             else if (this.tab === 1) { this.libraryView() }
             else { this.accountView() }
           }.width('100%').enabled(this.ready && !this.busy)
         }.layoutWeight(1).width('100%')
         if (this.loggedIn) {
-          Row() {
-            Text('单词' + (this.queue.length > this.cursor ? ' · ' + (this.queue.length - this.cursor) : '')).fontColor(this.tab === 0 ? '#339999' : '#999999').textAlign(TextAlign.Center).layoutWeight(1).onClick(() => { this.tab = 0; this.execute(async () => { await this.loadStudy(); }); })
-            Text('词库').fontColor(this.tab === 1 ? '#339999' : '#999999').textAlign(TextAlign.Center).layoutWeight(1).onClick(() => { this.tab = 1; this.execute(async () => { this.groups = await this.api.post<LibraryGroup[]>('library/pageList'); }); })
-            Text('我的').fontColor(this.tab === 2 ? '#339999' : '#999999').textAlign(TextAlign.Center).layoutWeight(1).onClick(() => { this.tab = 2; this.execute(async () => { this.user = await this.api.post<User>('user/info'); }); })
+          Row({ space: 10 }) {
+            Button('单词' + (this.queue.length > this.cursor ? ' · ' + (this.queue.length - this.cursor) : ''), { type: ButtonType.Normal }).fontColor(this.tab === 0 ? '#FFFFFF' : '#55736A').backgroundColor(this.tab === 0 ? '#28866E' : '#F0F6F3').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 0; this.execute(async () => { await this.loadStudy(); }); })
+            Button('词库', { type: ButtonType.Normal }).fontColor(this.tab === 1 ? '#FFFFFF' : '#55736A').backgroundColor(this.tab === 1 ? '#28866E' : '#F0F6F3').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 1; this.execute(async () => { this.groups = await this.api.post<LibraryGroup[]>('library/pageList'); }); })
+            Button('我的', { type: ButtonType.Normal }).fontColor(this.tab === 2 ? '#FFFFFF' : '#55736A').backgroundColor(this.tab === 2 ? '#28866E' : '#F0F6F3').height(44).borderRadius(14).fontSize(15).fontWeight(FontWeight.Medium).layoutWeight(1).onClick(() => { this.tab = 2; this.execute(async () => { this.user = await this.api.post<User>('user/info'); }); })
           }.padding(12).width('100%').enabled(!this.busy)
         }
       }

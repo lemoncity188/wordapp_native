@@ -11,12 +11,31 @@ struct RootView: View {
                     LibraryView().tabItem { Label("词库", systemImage: "books.vertical") }.tag(1)
                     AccountView().tabItem { Label("我的", systemImage: "person") }.tag(2)
                 }
+                .toolbar(.hidden, for: .tabBar)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    HStack(spacing: 10) {
+                        tabButton("单词", index: 0)
+                        tabButton("词库", index: 1)
+                        tabButton("我的", index: 2)
+                    }.padding(12).background(Color.white)
+                }
             }
         }
         .tint(Color(red: 0.15, green: 0.65, blue: 0.60))
         .overlay { if model.busy { ProgressView().padding(24).background(.regularMaterial).cornerRadius(12) } }
         .disabled(model.busy)
         .alert("提示", isPresented: Binding(get: { !model.message.isEmpty }, set: { if !$0 { model.message = "" } })) { Button("确定") { model.message = "" } } message: { Text(model.message) }
+    }
+    func tabButton(_ title: String, index: Int) -> some View {
+        let selected = model.selectedTab == index
+        return Button { model.selectedTab = index } label: {
+            HStack(spacing: 5) {
+                Text(title)
+                if index == 0 && model.queue.count > model.cursor { Text("· \(model.queue.count - model.cursor)").font(.caption) }
+            }.font(.system(size: 15, weight: .medium)).frame(maxWidth: .infinity).frame(height: 44)
+                .foregroundColor(selected ? .white : Color(red: 0.33, green: 0.45, blue: 0.42))
+                .background(selected ? Color(red: 0.157, green: 0.525, blue: 0.431) : Color(red: 0.94, green: 0.965, blue: 0.95)).cornerRadius(14)
+        }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 struct AuthView: View {
@@ -97,11 +116,13 @@ struct StudyView: View {
     var body: some View {
         NavigationStack {
             VStack {
-                if let item = model.current {
-                    Text(item["word"] as? String ?? "").font(.system(size: 36, weight: .bold)).padding(.top, 30)
+                if model.busy { Spacer(); ProgressView(); Spacer() }
+                else if !model.studyLoaded { Spacer(); Button("加载学习记录") { model.run { try await model.loadStudy() } }; Spacer() }
+                else if let item = model.current {
+                    Text(item["word"] as? String ?? "").font(.system(size: 36, weight: .bold)).foregroundColor(Color(red: 0.157, green: 0.525, blue: 0.431)).padding(.top, 30)
                     HStack {
                         Text("美[" + ((item["vocabulary"] as? JSON)?["usPhonetic"] as? String ?? "") + "]").foregroundColor(.secondary)
-                        Button { model.run { try await model.speak() } } label: { Image(systemName: "speaker.wave.2") }
+                        Button { model.run { try await model.speak() } } label: { Image(systemName: "speaker.wave.2").font(.system(size: 20)).foregroundColor(Color(red: 0.157, green: 0.525, blue: 0.431)).frame(width: 36, height: 36).background(Color(red: 0.929, green: 0.969, blue: 0.949)).clipShape(Circle()) }.accessibilityLabel("播放单词发音")
                     }
                     ScrollView {
                         if model.revealed {
